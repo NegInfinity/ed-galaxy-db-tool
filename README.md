@@ -6,7 +6,7 @@ You can use it to find colonization targets within range from specific faction, 
 ## Disclaimer
 
 This is unsupported, comes with no warranty, issues will not be tracked and patches will not be accepted. If you want to change anything - fork it. The code is mostly LLM-generated meaning not top tier either. 
-It exists because such query cannot be done by [https://spansh.co.uk/](spansh.co.uk) at the time of writing. The tool is not affiliated with spansh.
+It exists because such query cannot be done by [spansh.co.uk](https://spansh.co.uk/) at the time of writing. The tool is not affiliated with spansh.
 
 **You must build the database before it can be used.** The script will create one on the first run, but it'll be empty. See "initialization" below.
 
