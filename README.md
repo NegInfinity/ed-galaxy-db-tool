@@ -12,7 +12,7 @@ It exists because such query cannot be done by [spansh.co.uk](https://spansh.co.
 
 ## License
 
-Because the vast majority of code is LLM-generated, the license is CC0, public domain. 
+Because the vast majority of code is LLM-generated, the license is Unlicense or, public domain. 
 
 ## Requirements
 
