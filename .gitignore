@@ -1,0 +1,5 @@
+﻿.vscode
+.venv
+*.json.gz
+*.sqlite
+sample-data
