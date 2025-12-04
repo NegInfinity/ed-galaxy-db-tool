@@ -126,10 +126,80 @@ def extract_matches(input_file, pattern):
 class PlanetData:
 	name: str
 	mainStar: str
+	url: str
 	numStars: int = 0
 	numPlanets: int = 0
-	hasLandable: bool = False
-	hasAtmosphere: bool = False
+	numLandable: int = 0
+	numAtmosphere: int = 0
+	numRings: int = 0
+	numBelts: int = 0
+	numRocky: int = 0
+	numHmc: int = 0
+	numElws: int = 0
+	numWws: int = 0
+	numBlackHoles: int = 0
+	numNStars: int = 0
+
+	# def getScore(self):
+	# 	result = 0
+	# 	result += self.numStars
+	# 	result += self.numPlanets
+	# 	result += self.numRings
+	# 	result += self.numLandable * 2
+	# 	result += self.numAtmosphere * 4
+	# 	result += self.numElws * 8
+	# 	result += self.numWws * 6
+	# 	result += self.numBlackHoles * 50
+	# 	result += self.numNStars * 20
+	# 	return result
+	def getScore(self):
+		badStarClasses = ["T (Brown dwarf) Star"]
+		result = 0
+		if self.mainStar in badStarClasses:
+			result -= 10
+		result += self.numStars
+		result += self.numPlanets
+		result += self.numRings * 2
+		result += self.numBelts * 4
+		result += self.numLandable * 3
+		numCmmCandidates = self.numRocky + self.numHmc
+		result += numCmmCandidates * 4
+		result += self.numAtmosphere * 5
+		result += self.numElws * 15
+		result += self.numWws * 12
+		result += self.numBlackHoles * 20
+		result += self.numNStars * 10
+		return result
+
+	def writeStats(self, output):
+		output.write(f"{self.name}\n")
+		output.write(f"Score: {self.getScore()}\n")
+		output.write(f"Main star: {self.mainStar}\n")
+		output.write(f"{self.url}\n")
+		if self.numStars > 0:
+			output.write(f"Stars: {self.numStars}\n")
+		if self.numPlanets > 0:
+			output.write(f"Planets: {self.numPlanets}\n")
+		if self.numLandable > 0:
+			output.write(f"Landable: {self.numLandable}\n")
+		if self.numBlackHoles > 0:
+			output.write(f"(!)Black Holes: {self.numBlackHoles}\n")
+		if self.numNStars > 0:
+			output.write(f"(!)Neutron Stars: {self.numNStars}\n")
+		if self.numAtmosphere > 0:
+			output.write(f"Atmosphere: {self.numAtmosphere}\n")
+		if self.numBelts > 0:
+			output.write(f"Belts: {self.numBelts}\n")
+		if self.numRings > 0:
+			output.write(f"Rings: {self.numRings}\n")
+		if self.numRocky > 0:
+			output.write(f"Rocky: {self.numRocky}\n")
+		if self.numHmc > 0:
+			output.write(f"HMC: {self.numHmc}\n")
+		if self.numElws > 0:
+			output.write(f"Earth-like: {self.numElws}\n")
+		if self.numWws > 0:
+			output.write(f"Water-worlds: {self.numWws}\n")
 
 def filter_system_names(system_names: list[str]):
 	"""
@@ -153,31 +223,72 @@ def filter_system_names(system_names: list[str]):
 		planetCount = 0
 		starType = ''
 		numBodies = data.get('bodyCount', 0)
+		url = data.get('url', "")
 		bodies = data.get('bodies', [])
-		hasLandable = False
-		hasAtmosphere = False
+		numLandable = 0
+		numAtmosphere = 0
+		numRings = 0
+		numBelts = 0
+		numHmc = 0
+		numRocky = 0
+		numWws = 0
+		numElws = 0
+		numBhs = 0
+		numNeutrons = 0
+		
 		
 		for body in bodies:
 			bodyType = body.get('type', '')
 			if bodyType == 'Star':
 				starCount += 1
+				subType = body.get("subType", "")
+				if subType == "Black Hole":
+					numBhs += 1
+				elif subType == "Neutron Star":
+					numNeutrons += 1
+				if belts := body.get("belts", None):
+					numBelts += len(belts)
 				if body.get('isMainStar', False):
 					starType = body.get('subType', '')
 			elif bodyType == 'Planet':
-				if body.get('isLandable', False):
-					hasLandable = True
+				subType = body.get("subType", "")
+				landable = body.get('isLandable', False)
+				if rings := body.get("rings", None):
+					# numRings += 1
+					numRings += len(rings)
+				if subType == "Water world":
+					numWws += 1
+				elif subType == "Rocky body":
+					if landable:
+						numRocky += 1
+				elif subType == "High metal content world":
+					if landable:
+						numHmc += 1
+				elif subType == "Earth-like world":
+					numElws += 1
+				if landable:
+					numLandable += 1
 					if body.get('atmosphereType', "") != "No atmosphere":
-						hasAtmosphere = True
+						numAtmosphere += 1
 				planetCount += 1
 
-		if (planetCount > 0) and (hasLandable or hasAtmosphere):
+		if (planetCount > 0) and ((numLandable > 0) or (numAtmosphere > 0)):
 			tmp = PlanetData(
 				name=sys_name,
 				mainStar=starType,
+				url=url,
 				numStars=starCount,
 				numPlanets=planetCount,
-				hasLandable=hasLandable,
-				hasAtmosphere=hasAtmosphere
+				numLandable=numLandable,
+				numAtmosphere=numAtmosphere,
+				numRings=numRings,
+				numBelts=numBelts,
+				numRocky=numRocky,
+				numHmc=numHmc,
+				numElws=numElws,
+				numWws=numWws,
+				numBlackHoles=numBhs,
+				numNStars=numNeutrons
 			)
 			yield tmp
 		
@@ -201,13 +312,30 @@ def main():
 		matches = extract_matches(args.input, pattern)
 		filtered = filter_system_names(matches)
 		
+		scored = []
 		# Output results
 		for cur in filtered:
-			args.output.write(f"{cur.name}\n")
-			args.output.write(f"Main star: {cur.mainStar}\n")
-			args.output.write(f"Stars: {cur.numStars:>2} planets: {cur.numPlanets:>2}\n")
-			args.output.write(f"Landable: {cur.hasLandable} Atmosphere: {cur.hasAtmosphere}\n")
+			# args.output.write(f"{cur.name}\n")
+			# args.output.write(f"Score: {cur.getScore()}\n")
+			# args.output.write(f"Main star: {cur.mainStar}\n")
+			# args.output.write(f"Stars: {cur.numStars:>2} planets: {cur.numPlanets:>2}\n")
+			# args.output.write(f"Landable: {cur.numLandable} Atmosphere: {cur.numAtmosphere}\n")
+			# args.output.write(f"Rings: {cur.numRings} Rocky: {cur.numRocky}\n")
+			# args.output.write(f"Earth-like: {cur.numElws} Water-worlds: {cur.numWws}\n")
+			cur.writeStats(args.output)
 			args.output.write(f"{'-'*40}\n")
+			scored.append(cur)
+
+		scored = sorted(scored, key=lambda x: -x.getScore())
+		args.output.write(f"{'='*40}:\n")
+		args.output.write(f"Sorted: {len(scored)}:\n")
+		args.output.write(f"{'='*40}:\n")
+
+		for cur in scored:
+			args.output.write(f"{cur.name}: {cur.getScore()}\n")
+			args.output.write(f"{'-'*40}\n")
+			cur.writeStats(args.output)
+			args.output.write(f"{'='*40}\n")		
 			
 	finally:
 		args.input.close()
