@@ -127,6 +127,9 @@ def gkey(x, y, z):
 	"""Calculate grid coordinates from full coordinates"""
 	return (int(floor(x/GRID)), int(floor(y/GRID)), int(floor(z/GRID)))
 
+def is_any_faction(name: str) -> bool:
+	return name == "ANY"
+
 class GalaxyDatabase:
 	def __init__(self, db_path, restore_from=None):
 		self.db_path = db_path
@@ -418,15 +421,20 @@ class GalaxyDatabase:
 	def query_systems_by_faction(self, faction_name):
 		"""Query systems controlled by a specific faction"""
 		cursor = self.conn.cursor()
-		cursor.execute('''
+
+		any_faction = is_any_faction(faction_name)
+		where_clause = "p.controllingFaction != ''" if any_faction else "p.controllingFaction = ?"
+		params = () if any_faction else (faction_name,)
+
+		cursor.execute(f'''
 		SELECT 
 			s.id64, s.x, s.y, s.z, s.name, s.main_star,
 			p.population, p.security, p.controllingFaction,
 			p.primaryEconomy, p.secondaryEconomy
 		FROM population_data p
 		JOIN systems s ON p.id64 = s.id64
-		WHERE p.controllingFaction = ?
-		''', (faction_name,))
+		WHERE {where_clause}
+		''', params)
 		
 		results = []
 		for row in cursor.fetchall():
@@ -530,6 +538,9 @@ class GalaxyDatabase:
 					security = obj.get('security', '')
 					primary_economy = obj.get('primaryEconomy', '')
 					secondary_economy = obj.get('secondaryEconomy', '')
+
+					if not population or not primary_economy:
+						continue
 					
 					controlling_faction = ''
 					if 'controllingFaction' in obj and isinstance(obj['controllingFaction'], dict):
@@ -635,6 +646,8 @@ def find_colony_candidates(db, args):
 	
 	print(f"Finding colony candidates for '{args.faction_name}'")
 	print(f"Candidate search radius: {candidate_range} LY")
+
+	any_faction = is_any_faction(args.faction_name)
 	
 	ref_system = None
 	if args.reference_system:
@@ -652,7 +665,7 @@ def find_colony_candidates(db, args):
 		# Filter to get faction-controlled systems
 		faction_systems = []
 		for sys, pop, dist in ref_results:  # dist is distance from ref_system
-			if pop is not None and pop.controllingFaction == args.faction_name:
+			if pop is not None and ((pop.controllingFaction == args.faction_name) or (any_faction and pop.controllingFaction)):
 				faction_systems.append((sys, pop))
 		
 		print(f"Found {len(faction_systems)} systems controlled by '{args.faction_name}' "
